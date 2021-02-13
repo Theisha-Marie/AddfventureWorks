@@ -1,0 +1,88 @@
+#Imports
+import pymssql
+import os
+ 
+#Server Configiration / Connection to DB
+server = "mshi-db"
+user = "HIN700"
+password = "fall2017"
+ 
+ 
+#pass the parameters above to a driver on the Unix box that
+#makes a connection to the SQL server MSHI-DB (stored in variable server above)
+#The connection is stored in an object called conn
+conn = pymssql.connect(server, user, password, "tempdb")
+ 
+ 
+#This class represents a Cursor (in terms of Python DB-API specs) that is used to make
+#queries against the database and obtaining results. You create Cursor instances by
+#calling cursor() method on an open Connection connection object.
+cursor = conn.cursor()
+ 
+#clearing the screen this line will only work on the Unix server
+os.system('clear')
+ 
+colorSearch = ''
+colorList = ''
+while True:
+    colorList = ['Black', 'black', 'Yellow', 'yellow', 'Pink', 'pink']
+#select pink to return zero records. 
+    colorSearch = input('Please select a color. (Enter Black or Yellow):  ')
+    if colorSearch in colorList:
+        print('You selected ', colorSearch, '.')
+        break
+    else:
+        print('Invalid entry.')
+ 
+print('\n')
+ 
+while True:
+    try:
+        maxQty = int(input('Please enter a number. (Try the number 5):  '))
+    except ValueError:
+        print('Invalid input. Please enter whole numbers only.')
+        continue
+    if maxQty != 5:
+        print('Incorrect number entered.')
+    else:
+        break
+ 
+input('\nYou entered the color ' + colorSearch + ' and the number ' + str(maxQty) + '. Press enter to display your SQL statment.')
+ 
+mySearchString = 'SELECT EnglishProductName,EnglishPromotionName, Color, SUM(MinQty) AS ItemCount, MaxQty, UnitPrice FROM (AdventureWorksDW2014.dbo.DimProduct p LEFT OUTER JOIN AdventureWorksDW2014.dbo.FactInternetSales s ON p.ProductKey = s.ProductKey) INNER JOIN AdventureWorksDW2014.dbo.DimPromotion pr ON s.PromotionKey = pr.PromotionKey WHERE MinQty > 0 AND Color = \'' + colorSearch + '\' AND MaxQty > \'' + str(maxQty) + '\' GROUP BY EnglishProductName , Color, EnglishPromotionName, UnitPrice, MaxQty'
+print('\n')
+print(mySearchString)
+print('\n')
+input('Press enter to send your SQL statement to the database server')
+print('\n\nYour Results Are:')
+ 
+#sends the SQL string to the server and stores the results in instance cursor The output of
+#the cursor.execut fuction is a recordset. This is the same as you see in the data management tool (SQL Studio).
+#
+cursor.execute(mySearchString)
+#stores the results of current row of results in instand row
+row = cursor.fetchone()
+counter = 0 #this will be used to track what row of the recordset the program is currently on.
+while row:
+    counter = counter + 1
+    product = row[0]
+    promo = row[1]
+    color = row[2]
+    minqty = row[3]
+    maxiumqty = row[4]
+    unitprice = row[5]
+    print(' ', counter,'\t', product, '    \t', promo, '\t', color, '\t', minqty, '\t', maxiumqty, '\t', unitprice)
+    row = cursor.fetchone()
+ 
+
+ 
+if counter == 0:
+    print('your search result equal zero records')
+    input('Press any key to exit.')
+    exit()
+else: 
+    input('\nTo exit the program, press any key.')
+    exit()
+ 
+ 
+conn.close()
